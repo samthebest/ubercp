@@ -24,12 +24,11 @@ object UberCp {
 
     val ss = SparkSession.builder().appName("uber-cp").master(conf.master()).getOrCreate()
 
-    ss
+    println("inpath = " + conf.inPath())
+    println("outpath = " + conf.outPath())
 
+    ss.sparkContext.textFile(conf.inPath()).coalesce(conf.numFiles()).saveAsTextFile(conf.outPath())
 
-
-//    sqlContext.read.parquet(in).coalesce(numFiles).write.parquet(out)
-
-
+    println("UberCp Success")
   }
 }
