@@ -12,8 +12,8 @@ libraryDependencies ++= Seq(
   //
   "org.rogach" %% "scallop" % "3.1.0",
   //
-  "org.apache.spark" %% "spark-core" % "2.0.1" withSources() withJavadoc(),
-  "org.apache.spark" %% "spark-sql" % "2.0.1" withSources() withJavadoc()
+  "org.apache.spark" %% "spark-core" % "2.2.0" withSources() withJavadoc(),
+  "org.apache.spark" %% "spark-sql" % "2.2.0" withSources() withJavadoc()
 )
 
 dependencyOverrides ++= Set(
@@ -52,4 +52,4 @@ name := "uber-cp"
 
 parallelExecution in Test := false
 
-version := "1"
+crossPaths := false
