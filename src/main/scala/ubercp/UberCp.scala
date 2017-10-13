@@ -18,12 +18,15 @@ object UberCp {
       val outPath = opt[String](descr = "The output path")
       val partitioned = opt[Boolean](default = Some(false), descr = "If the input data is partitioned, set this to" +
         " true (and uber cp will preserve partitioning.  If set to false, it will break.")
+      val master = opt[String](default = Some("local"), descr = "Master URL for Spark. Default = local")
       verify()
     }
 
-    val ss = SparkSession.builder().appName("uber-cp").getOrCreate()
+    val ss = SparkSession.builder().appName("uber-cp").master(conf.master()).getOrCreate()
 
     ss
+
+
 
 //    sqlContext.read.parquet(in).coalesce(numFiles).write.parquet(out)
 

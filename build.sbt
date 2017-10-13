@@ -51,5 +51,3 @@ javaOptions ++= Seq("-target", "1.8", "-source", "1.8")
 name := "uber-cp"
 
 parallelExecution in Test := false
-
-crossPaths := false
