@@ -42,11 +42,23 @@ object UberCpIT extends Specification {
     }
 
     "Coalesce 30 parquet files to 5 parquet files correctly" in {
-      failure("write me")
+      import ss.implicits._
+
+      val data = (1 to 200).map(i => DummyData("some data", i)).toList
+
+      ss.sparkContext.makeRDD(data).repartition(30).toDS()
+      .write.parquet(s"$tmpPath/30-parquet-files")
+
+      (s"./bin/run-local.sh -f parquet --format-out parquet " +
+        s"-i $tmpPath/30-parquet-files -o $tmpPath/5-parquet-files -n 5").!! must_=== 0
+
+      ss.read.parquet(s"$tmpPath/5-parquet-files").as[DummyData].collect().toList.sortBy(_.bar) must_=== data
     }
 
-    "Give error message for unsupported argument combination" in {
-      failure("write me")
+    "Give error message for Unsupported argument combination" in {
+      (s"./bin/run-local.sh -f text --format-out parquet  " +
+        s"-i $tmpPath/100-text-files -o $tmpPath/10-text-files-foo -n 10").!!!
+      ._2 must contain("Unsupported argument combination: ")
     }
 
     "Convert 10 tsv files to 5 parquet files correctly" in {
@@ -54,3 +66,5 @@ object UberCpIT extends Specification {
     }
   }
 }
+
+case class DummyData(foo: String, bar: Int)
