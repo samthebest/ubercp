@@ -12,7 +12,11 @@ object BashUtils {
     (stdout, stderr, exitCode)
   }
 
-  def executeStringAndPrintln(s: String): Int = s ! ProcessLogger(println, System.err.println)
+  def executeStringAndPrintln(s: String): Int = {
+    println(" + " + s)
+    Seq("bash", "-c", s) ! ProcessLogger(println, System.err.println)
+  }
+
 
   implicit class PimpedString(s: String) {
     def !! : Int = executeStringAndPrintln(s)
