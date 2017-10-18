@@ -5,6 +5,6 @@ sbt it:test 2>&1 \
   | grep --line-buffered -v " INFO " \
   | grep --line-buffered -v "{" \
   | grep --line-buffered -v "}" \
-  | grep --line-buffered -v " : " \
+  | grep --line-buffered -v "\" : " \
   | grep --line-buffered -v "Parquet message type" \
   | grep --line-buffered -v "  optional "

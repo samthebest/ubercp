@@ -7,7 +7,7 @@ object UberCp {
   // TODO Compression codecs
   def main(args: Array[String]): Unit = {
     val conf = new ScallopConf(args) {
-      // TODO Nicer behaviour would be to
+      // TODO Nicer behaviour would be to preserve numFiles as default
       val numFiles = opt[Int](default = Some(1),
         descr = "The number of files to output. Default = 1")
       val shuffle = opt[Boolean](default = Some(false),
@@ -28,18 +28,26 @@ object UberCp {
 
     (conf.formatIn(), conf.formatOut(), conf.shuffle(), conf.partitioned()) match {
       case ("text", "text", false, false) =>
+
         ss.sparkContext.textFile(conf.inPath()).coalesce(conf.numFiles()).saveAsTextFile(conf.outPath())
       case ("parquet", "parquet", false, false) =>
         // Have to use repartition instead of coalesce thanks to Spark regressions SPARK-17998 and SPARK-20144
-        ss.read.parquet(conf.inPath()).repartition(conf.numFiles()).write.parquet(conf.outPath())
+        ss.read.parquet(conf.inPath())
+        .repartition(conf.numFiles())
+        .write.parquet(conf.outPath())
 
-      //      case ("tsv", "parquet", false, false) =>
-      //        ss.read.format("com.databricks.spark.csv").option("delimiter", "\t").load(conf.inPath())
-      //        .write.parquet(conf.outPath())
-      case (inf, outf, shuffle, partitioned) =>
-        throw new UnsupportedOperationException("Unsupported argument combination: " +
-          s"formatIn = $inf, formatOut = $outf, shuffle = $shuffle, partitioned = $partitioned")
+      case ("tsv", "parquet", false, false) =>
+        // Have to use repartition instead of coalesce thanks to Spark regressions SPARK-17998 and SPARK-20144
 
-    }
+        ss.read.format("com.databricks.spark.csv").option("delimiter", "\t").load(conf.inPath())
+        .repartition(conf.numFiles())
+        .write.parquet(conf.outPath())
+
+    case (inf, outf, shuffle, partitioned) =>
+      throw new UnsupportedOperationException("Unsupported argument combination: " +
+        s"formatIn = $inf, formatOut = $outf, shuffle = $shuffle, partitioned = $partitioned")
+
   }
+}
+
 }

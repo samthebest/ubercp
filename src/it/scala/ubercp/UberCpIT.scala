@@ -51,10 +51,10 @@ object UberCpIT extends Specification {
         (1 to 100).map("some data " + _).toList.sorted
     }
 
+    val data = (1 to 5000).map(i => DummyData("some data", i)).toList
+
     "Coalesce 30 parquet files to 5 parquet files correctly" in {
       import ss.implicits._
-
-      val data = (1 to 200).map(i => DummyData("some data", i)).toList
 
       ss.sparkContext.makeRDD(data).repartition(30).toDS()
       .write.parquet(s"$tmpPath/30-parquet-files")
@@ -69,16 +69,15 @@ object UberCpIT extends Specification {
     "Coalesce 40 tsv files to 7 parquet files correctly" in {
       import ss.implicits._
 
-      val data = (1 to 150).map(i => DummyData("some data", i)).toList
-
       ss.sparkContext.makeRDD(data).repartition(40).toDS()
       .write.format("com.databricks.spark.csv").option("delimiter", "\t").save(s"$tmpPath/40-tsv-files")
 
-      runUberCp("tsv", "40-tsv-files", "7-parquet-files", 5, Some("parquet")) must_=== 0
+      runUberCp("tsv", "40-tsv-files", "7-parquet-files", 7, Some("parquet")) must_=== 0
 
       countFiles("/7-parquet-files") must_=== 7
 
-      ss.read.parquet(s"$tmpPath/7-parquet-files").as[DummyData].collect().toList.sortBy(_.bar) must_=== data
+      ss.read.parquet(s"$tmpPath/7-parquet-files").withColumnRenamed("_c0", "foo").withColumnRenamed("_c1", "bar")
+      .as[DummyDataString].collect().toList.map(_.toDummyData).sortBy(_.bar) must_=== data
     }
 
     "Give error message for Unsupported argument combination" in {
@@ -94,3 +93,6 @@ object UberCpIT extends Specification {
 }
 
 case class DummyData(foo: String, bar: Int)
+case class DummyDataString(foo: String, bar: String) {
+  def toDummyData: DummyData = DummyData(foo, bar.toInt)
+}
