@@ -51,6 +51,7 @@ object UberCpIT extends Specification {
         (1 to 100).map("some data " + _).toList.sorted
     }
 
+    // TODO Use different data for each test to make tests more robust
     val data = (1 to 5000).map(i => DummyData("some data", i)).toList
 
     "Coalesce 30 parquet files to 5 parquet files correctly" in {
@@ -77,6 +78,20 @@ object UberCpIT extends Specification {
       countFiles("/7-parquet-files") must_=== 7
 
       ss.read.parquet(s"$tmpPath/7-parquet-files").withColumnRenamed("_c0", "foo").withColumnRenamed("_c1", "bar")
+      .as[DummyDataString].collect().toList.map(_.toDummyData).sortBy(_.bar) must_=== data
+    }
+
+    "Coalesce 40 csv files to 8 parquet files correctly" in {
+      import ss.implicits._
+
+      ss.sparkContext.makeRDD(data).repartition(40).toDS()
+      .write.format("com.databricks.spark.csv").save(s"$tmpPath/40-csv-files")
+
+      runUberCp("csv", "40-csv-files", "8-parquet-files", 8, Some("parquet")) must_=== 0
+
+      countFiles("/8-parquet-files") must_=== 8
+
+      ss.read.parquet(s"$tmpPath/8-parquet-files").withColumnRenamed("_c0", "foo").withColumnRenamed("_c1", "bar")
       .as[DummyDataString].collect().toList.map(_.toDummyData).sortBy(_.bar) must_=== data
     }
 
