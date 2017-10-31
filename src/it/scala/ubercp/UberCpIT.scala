@@ -77,6 +77,7 @@ object UberCpIT extends Specification {
 
       countFiles("/7-parquet-files") must_=== 7
 
+      // FIXME Seems like spark is not autodiscovering that it is an Int
       ss.read.parquet(s"$tmpPath/7-parquet-files").withColumnRenamed("_c0", "foo").withColumnRenamed("_c1", "bar")
       .as[DummyDataString].collect().toList.map(_.toDummyData).sortBy(_.bar) must_=== data
     }
@@ -91,8 +92,17 @@ object UberCpIT extends Specification {
 
       countFiles("/8-parquet-files") must_=== 8
 
+      // FIXME Seems like spark is not autodiscovering that it is an Int
       ss.read.parquet(s"$tmpPath/8-parquet-files").withColumnRenamed("_c0", "foo").withColumnRenamed("_c1", "bar")
       .as[DummyDataString].collect().toList.map(_.toDummyData).sortBy(_.bar) must_=== data
+    }
+
+    "Coalesce 33 parquet files to 6 tsv files correctly" in {
+      pending
+    }
+
+    "Coalesce 33 parquet files to 9 tsv files correctly" in {
+      pending
     }
 
     "Give error message for Unsupported argument combination" in {
