@@ -1,6 +1,7 @@
 package ubercp
 
 import org.specs2.mutable.Specification
+import Path._
 
 object XmlFlatten extends Specification {
   sequential
@@ -25,32 +26,26 @@ object XmlFlatten extends Specification {
       |</note>
     """.stripMargin
 
-  val textOnlySchema = "note" -> Map(
-    "to" -> "String",
-    "from" -> "String",
-    "cc" -> "String",
-    "bcc" -> "String",
-    "heading" -> "String",
-    "subject" -> "String",
-    "body" -> "String"
-  )
+  // TODO Auto detect Double, Int, and Boolean (true, false, and Yes/No)
+
+  implicit def toPath(s: String): Path = Path(s)
 
   // Should write this first, and only implement schema discovery that is necessary
-  val flattenedTextOnly = List(
+  val flattenedTextOnly: List[Record] = List(
     Map(
-      "to" -> "Tove",
-      "from" -> "Jani",
-      "cc" -> "Bob",
-      "heading" -> "Reminder",
-      "body" -> "Don't forget me this weekend!"
+      (Path("to"), Value) -> "Tove",
+      (Path("from"), Value) -> "Jani",
+      (Path("cc"), Value) -> "Bob",
+      (Path("heading"), Value) -> "Reminder",
+      (Path("body"), Value) -> "Don't forget me this weekend!"
     ),
     Map(
-      "to" -> "Alice",
-      "from" -> "Bob",
-      "bcc" -> "Fred",
-      "heading" -> "JFDI",
-      "subject" -> "JFDI!",
-      "body" -> "Buy socks"
+      (Path("to"), Value) -> "Alice",
+      (Path("from"), Value) -> "Bob",
+      (Path("bcc"), Value) -> "Fred",
+      (Path("heading"), Value) -> "JFDI",
+      (Path("subject"), Value) -> "JFDI!",
+      (Path("body"), Value) -> "Buy socks"
     )
   )
 
@@ -67,23 +62,16 @@ object XmlFlatten extends Specification {
       |</person>
     """.stripMargin
 
-  val withAttributesSchema = "person" -> Map(
-    "sex:attribute" -> "StringAttribute",
-    "firstname" -> "String",
-    "lastname" -> "String",
-    "sex" -> "String"
-  )
-
-  val flattenedWithAttributes = List(
+  val flattenedWithAttributes: List[Record] = List(
     Map(
-      "sex:attribute" -> "female",
-      "firstname" -> "Anna",
-      "lastname" -> "Smith"
+      (Path("sex"), Attribute) -> "female",
+      (Path("firstname"), Value) -> "Anna",
+      (Path("lastname"), Value) -> "Smith"
     ),
     Map(
-      "sex:attribute" -> "male",
-      "firstname" -> "Fred",
-      "sex" -> "M"
+      (Path("sex"), Attribute) -> "male",
+      (Path("firstname"), Value) -> "Fred",
+      (Path("sex"), Value) -> "M"
     )
   )
 
@@ -102,35 +90,31 @@ object XmlFlatten extends Specification {
       |</numbers>
     """.stripMargin
 
-  val withArraySchema = "numbers" -> Map(
-    "value" -> "StringArray"
-  )
-
   // May want optional record GUID generation if it's assumed the record doesn't already have an ID
-  val flattenedWithArray = List(
+  val flattenedWithArray: List[Record] = List(
     Map(
-      "value" -> "three",
-      "value:index" -> "0"
+      (Path("value"), Value) -> "three",
+      (Path("value"), Index) -> 0
     ),
     Map(
-      "value" -> "two",
-      "value:index" -> "1"
+      (Path("value"), Value) -> "two",
+      (Path("value"), Index) -> 1
     ),
     Map(
-      "value" -> "one",
-      "value:index" -> "2"
+      (Path("value"), Value) -> "one",
+      (Path("value"), Index) -> 2
     ),
     Map(
-      "value" -> "one",
-      "value:index" -> "0"
+      (Path("value"), Value) -> "one",
+      (Path("value"), Index) -> 0
     ),
     Map(
-      "value" -> "two",
-      "value:index" -> "1"
+      (Path("value"), Value) -> "two",
+      (Path("value"), Index) -> 1
     ),
     Map(
-      "value" -> "three",
-      "value:index" -> "2"
+      (Path("value"), Value) -> "three",
+      (Path("value"), Index) -> 2
     )
   )
 
@@ -150,27 +134,131 @@ object XmlFlatten extends Specification {
       |</person>
     """.stripMargin
 
-  val flattenedNestedXml = List(
+  val flattenedNestedXml: List[Record] = List(
     Map(
-      "sex:attribute" -> "female",
-      "family.brother" -> "Bob",
-      "family.sister" -> "Alice",
-      "lastname" -> "Smith"
+      (Path("sex"), Attribute) -> "female",
+      (Path(List("family", "brother")), Value) -> "Bob",
+      (Path(List("family", "sister")), Value) -> "Alice",
+      (Path("lastname"), Value) -> "Smith"
     ),
     Map(
-      "sex:attribute" -> "male",
-      "firstname" -> "Fred",
-      "sex" -> "M"
+      (Path("sex"), Attribute) -> "male",
+      (Path("firstname"), Value) -> "Fred",
+      (Path("sex"), Value) -> "M"
     )
   )
 
-  val nestedArraysInArrays = ???
+  val nestedWithArrays =
+    """
+      |<person>
+      |  <family>
+      |    <brother>Bob</brother>
+      |    <brother>Bill</brother>
+      |    <sister>Alice</sister>
+      |  </family>
+      |  <lastname>Smith</lastname>
+      |</person>
+      |
+      |<person sex="male">
+      |  <sex>M</sex>
+      |  <firstname>Fred</firstname>
+      |</person>
+    """.stripMargin
 
-  val nestedArraysInArraysAndStructs = ???
+  val flattenedNestedWithArrays: List[Record] = List(
+    Map(
+      (Path("sex"), Attribute) -> "female",
+      (Path("family") / "brother", Value) -> "Bob",
+      (Path("family") / "brother", Index) -> "0",
+      (Path("family") / "sister", Value) -> "Alice",
+      (Path("lastname"), Value) -> "Smith"
+    ),
+    Map(
+      (Path("sex"), Attribute) -> "female",
+      (Path("family") / "brother", Value) -> "Bill",
+      (Path("family") / "brother", Index) -> "1",
+      (Path("family") / "sister", Value) -> "Alice",
+      (Path("lastname"), Value) -> "Smith"
+    ),
+    Map(
+      (Path("sex"), Attribute) -> "male",
+      (Path("firstname"), Value) -> "Fred",
+      (Path("sex"), Value) -> "M"
+    )
+  )
+
+  val arraysInArrays =
+    """
+      |<numbers>
+      |    <values>
+      |      <number>one</number>
+      |      <number>two</number>
+      |    </values>
+      |    <values>
+      |      <number>three</number>
+      |    </values>
+      |
+      |</numbers>
+      |
+      |<numbers>
+      |    <values>
+      |      <number>four</number>
+      |    </values>
+      |</numbers>
+    """.stripMargin
+
+  val flattenedArraysInArrays: List[Record] = List(
+    Map(
+      "values.number" -> "one",
+      "values.number:index" -> 0,
+      "values:index" -> 0
+    ),
+    Map(
+      "values.number" -> "two",
+      "values.number:index" -> 1,
+      "values:index" -> 0
+    ),
+    Map(
+      "values.number" -> "three",
+      "values.number:index" -> 0,
+      "values:index" -> 1
+    ),
+
+    Map(
+      "values.number" -> "four",
+      "values.number:index" -> 0,
+      "values:index" -> 0
+    )
+  )
+
+  // This should automatically cause a table split (to avoid a big explode)
+  val multipleArraysInArrays =
+    """
+      |<numbers>
+      |    <values>
+      |      <number>one</number>
+      |      <number>two</number>
+      |    </values>
+      |    <values>
+      |      <number>three</number>
+      |    </values>
+      |
+      |    <doubles>
+      |      <double>1.0</double>
+      |      <double>2.0</double>
+      |    </doubles>
+      |
+      |</numbers>
+      |
+      |<numbers>
+      |    <values>
+      |      <number>four</number>
+      |    </values>
+      |</numbers>
+    """.stripMargin
+
+  // Num output tables = O(num arrays at the same level)
 
   val inconsistentSchemaExample = ???
 
-  "XmlFlatten.discoverSchema" should {
-
-  }
 }
